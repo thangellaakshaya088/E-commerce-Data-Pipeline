@@ -1,0 +1,86 @@
+version: 2
+
+sources:
+  - name: shopstream_bronze
+    database: shopstream
+    schema: public
+    tables:
+      - name: orders
+        columns:
+          - name: order_id
+            tests: [not_null, unique]
+          - name: user_id
+            tests: [not_null]
+          - name: total_amt
+            tests: [not_null]
+      - name: clickstream
+        columns:
+          - name: event_id
+            tests: [not_null, unique]
+      - name: users
+        columns:
+          - name: user_id
+            tests: [not_null, unique]
+          - name: email
+            tests: [not_null]
+      - name: products
+        columns:
+          - name: product_id
+            tests: [not_null, unique]
+
+models:
+  - name: stg_orders
+    description: Cleaned orders from the bronze layer
+    columns:
+      - name: order_id
+        tests: [not_null, unique]
+      - name: user_id
+        tests: [not_null]
+      - name: total_amt
+        tests: [not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [pending, confirmed, shipped, delivered, cancelled, returned]
+
+  - name: stg_users
+    description: Cleaned users from the bronze layer
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
+      - name: email
+        tests: [not_null, unique]
+
+  - name: stg_products
+    description: Cleaned products from the bronze layer
+    columns:
+      - name: product_id
+        tests: [not_null, unique]
+      - name: price
+        tests: [not_null]
+
+  - name: fct_daily_revenue
+    description: Daily revenue aggregated from completed orders
+    columns:
+      - name: order_date
+        tests: [not_null, unique]
+      - name: gross_revenue
+        tests: [not_null]
+
+  - name: fct_conversion_funnel
+    description: Daily session-level conversion metrics
+    columns:
+      - name: session_date
+        tests: [not_null, unique]
+
+  - name: dim_customers
+    description: Customer dimension with lifetime value and RFM segmentation
+    columns:
+      - name: user_id
+        tests: [not_null, unique]
+
+  - name: dim_products
+    description: Product dimension with stock status and rating band
+    columns:
+      - name: product_id
+        tests: [not_null, unique]

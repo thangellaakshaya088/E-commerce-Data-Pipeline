@@ -20,15 +20,34 @@ def make_clickstream_df(spark, records):
 
 
 class TestCleanClickstream:
-    def test_deduplication_removes_duplicates(self, spark):
-        data = [
-            {"event_id": "e1", "session_id": "s1", "event_type": "page_view", "timestamp": "2024-01-01T10:00:00", "page_type": "home", "user_id": 1, "device": "desktop", "browser": "Chrome", "os": "Windows", "url": "http://x.com", "referrer": None, "ip_address": "1.1.1.1", "anonymous_id": "a1"},
-            {"event_id": "e1", "session_id": "s1", "event_type": "page_view", "timestamp": "2024-01-01T10:00:00", "page_type": "home", "user_id": 1, "device": "desktop", "browser": "Chrome", "os": "Windows", "url": "http://x.com", "referrer": None, "ip_address": "1.1.1.1", "anonymous_id": "a1"},
-            {"event_id": "e2", "session_id": "s1", "event_type": "click", "timestamp": "2024-01-01T10:01:00", "page_type": "product", "user_id": 1, "device": "desktop", "browser": "Chrome", "os": "Windows", "url": "http://x.com/p", "referrer": None, "ip_address": "1.1.1.1", "anonymous_id": "a1"},
-        ]
-        df = spark.createDataFrame(data)
-        deduped = df.dropDuplicates(["event_id"])
-        assert deduped.count() == 2
+   def test_deduplication_removes_duplicates(self, spark):
+    from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+    schema = StructType([
+        StructField("event_id", StringType(), True),
+        StructField("session_id", StringType(), True),
+        StructField("event_type", StringType(), True),
+        StructField("timestamp", StringType(), True),
+        StructField("page_type", StringType(), True),
+        StructField("user_id", IntegerType(), True),
+        StructField("device", StringType(), True),
+        StructField("browser", StringType(), True),
+        StructField("os", StringType(), True),
+        StructField("url", StringType(), True),
+        StructField("referrer", StringType(), True),  # ← now PySpark knows it's text
+        StructField("ip_address", StringType(), True),
+        StructField("anonymous_id", StringType(), True),
+    ])
+
+    data = [
+        ("e1", "s1", "page_view", "2024-01-01T10:00:00", "home", 1, "desktop", "Chrome", "Windows", "http://x.com", None, "1.1.1.1", "a1"),
+        ("e1", "s1", "page_view", "2024-01-01T10:00:00", "home", 1, "desktop", "Chrome", "Windows", "http://x.com", None, "1.1.1.1", "a1"),
+        ("e2", "s1", "click", "2024-01-01T10:01:00", "product", 1, "desktop", "Chrome", "Windows", "http://x.com/p", None, "1.1.1.1", "a1"),
+    ]
+
+    df = spark.createDataFrame(data, schema)
+    deduped = df.dropDuplicates(["event_id"])
+    assert deduped.count() == 2
 
     def test_null_event_id_filtered(self, spark):
         data = [
